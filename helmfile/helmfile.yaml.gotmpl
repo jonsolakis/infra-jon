@@ -1,0 +1,113 @@
+repositories:
+  - name: jetstack
+    url: https://charts.jetstack.io
+  - name: traefik
+    url: https://traefik.github.io/charts
+  - name: external-dns
+    url: https://kubernetes-sigs.github.io/external-dns/
+  - name: backube
+    url: https://backube.github.io/helm-charts/
+
+environments:
+  hobby:
+    values:
+      - environments/hobby.yaml
+
+---
+
+helmDefaults:
+  wait: true
+  waitForJobs: true
+  timeout: 600
+  createNamespace: true
+  cleanupOnFail: true
+
+releases:
+  - name: cert-manager
+    namespace: cert-manager
+    chart: jetstack/cert-manager
+    version: v1.21.1
+    condition: certManager.enabled
+    values:
+      - values/cert-manager.yaml
+
+  - name: platform-config
+    namespace: platform-system
+    chart: charts/platform-config
+    condition: letsencrypt.enabled
+    needs:
+      - cert-manager/cert-manager
+    values:
+      - letsencrypt:
+          enabled: {{ .Values.letsencrypt.enabled }}
+          email: {{ .Values.letsencrypt.email | quote }}
+          ingressClass: {{ .Values.letsencrypt.ingressClass | quote }}
+
+  - name: traefik
+    namespace: traefik-system
+    chart: traefik/traefik
+    version: 41.5.0
+    condition: traefik.enabled
+    values:
+      - values/traefik.yaml
+
+  - name: snapscheduler
+    namespace: snapscheduler
+    chart: backube/snapscheduler
+    version: 3.5.0
+    condition: fantasyHockeyStats.snapshots.enabled
+
+  - name: fantasy-hockey-stats
+    namespace: fantasy-hockey
+    chart: git::https://github.com/jonsolakis/fantasy-hockey-stats.git@charts/fantasy-hockey-stats?ref=48a3d2e
+    forceGoGetter: true
+    condition: fantasyHockeyStats.enabled
+    needs:
+      - traefik-system/traefik
+      - platform-system/platform-config
+    values:
+      - values/fantasy-hockey-stats.yaml
+
+  - name: fantasy-hockey-stats-snapshots
+    namespace: fantasy-hockey
+    chart: charts/snapshot-schedule
+    condition: fantasyHockeyStats.snapshots.enabled
+    needs:
+      - snapscheduler/snapscheduler
+      - fantasy-hockey/fantasy-hockey-stats
+    values:
+      - schedule:
+          claimSelector:
+            app.kubernetes.io/name: fantasy-hockey-stats
+            app.kubernetes.io/instance: fantasy-hockey-stats
+          snapshotClassName: do-block-storage
+          cron: "17 8 * * 6"
+          maxCount: 4
+
+  - name: smoke-test
+    namespace: smoke-test
+    chart: charts/smoke-test
+    installed: {{ .Values.smokeTest.enabled }}
+    needs:
+      - cert-manager/cert-manager
+      - platform-system/platform-config
+      - traefik-system/traefik
+    values:
+      - host: {{ .Values.smokeTest.host | quote }}
+
+{{- if .Values.externalDns.enabled }}
+  - name: external-dns-config
+    namespace: external-dns
+    chart: charts/external-dns-config
+    secrets:
+      - secrets/hobby.sops.yaml
+
+  - name: external-dns
+    namespace: external-dns
+    chart: external-dns/external-dns
+    version: 1.21.1
+    needs:
+      - external-dns/external-dns-config
+    values:
+      - values/external-dns.yaml.gotmpl
+{{- end }}

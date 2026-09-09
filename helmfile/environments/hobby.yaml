@@ -1,0 +1,25 @@
+certManager:
+  enabled: true
+
+traefik:
+  enabled: true
+
+letsencrypt:
+  enabled: true
+  email: "jonsolakis@gmail.com"
+  ingressClass: traefik
+
+smokeTest:
+  enabled: false
+  host: test.jonsolakis.dev
+
+fantasyHockeyStats:
+  enabled: true
+  snapshots:
+    enabled: true
+
+externalDns:
+  # Disabled until a domain and encrypted DigitalOcean DNS token are configured.
+  enabled: false
+  domains: []
+  ownerId: jon-hobby

@@ -1,0 +1,44 @@
+provider:
+  name: webhook
+  webhook:
+    image:
+      repository: ghcr.io/amoniacou/external-dns-digitalocean-webhook
+      # The provider currently publishes no stable release tags. Pin this before
+      # enabling ExternalDNS; see README.md for the trust/upgrade trade-off.
+      tag: latest
+    env:
+      - name: DO_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: digitalocean-credentials
+            key: token
+      - name: DO_DOMAIN_FILTER
+        value: {{ .Values.externalDns.domains | join "," | quote }}
+    args:
+      - --host=localhost
+      - --port=8080
+      - --health-host=0.0.0.0
+      - --health-port=8888
+    resources:
+      requests:
+        cpu: 5m
+        memory: 16Mi
+      limits:
+        memory: 64Mi
+
+policy: upsert-only
+registry: txt
+txtOwnerId: {{ .Values.externalDns.ownerId | quote }}
+domainFilters: {{ .Values.externalDns.domains | toJson }}
+sources:
+  - ingress
+  - service
+extraArgs:
+  webhook-provider-url: http://localhost:8080
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    memory: 128Mi

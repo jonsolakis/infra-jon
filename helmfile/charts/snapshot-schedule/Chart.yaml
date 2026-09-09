@@ -1,0 +1,5 @@
+apiVersion: v2
+name: snapshot-schedule
+description: A retained CSI snapshot schedule for a single PVC
+type: application
+version: 0.1.0

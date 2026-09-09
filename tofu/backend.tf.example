@@ -1,0 +1,7 @@
+# Local state is the zero-cost default for this single-operator hobby cluster.
+# Do not commit state. To migrate later, add a real backend block and run:
+# tofu init -migrate-state
+#
+# DigitalOcean Spaces is S3-compatible but adds a monthly cost and does not
+# provide DynamoDB-style state locking. A hosted OpenTofu-compatible backend is
+# preferable once CI is allowed to apply infrastructure.

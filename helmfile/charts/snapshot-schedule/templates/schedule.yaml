@@ -1,0 +1,27 @@
+apiVersion: snapscheduler.backube/v1
+kind: SnapshotSchedule
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  claimSelector:
+    matchLabels:
+      {{- required "schedule.claimSelector is required" .Values.schedule.claimSelector | toYaml | nindent 6 }}
+  retention:
+    maxCount: {{ required "schedule.maxCount is required" .Values.schedule.maxCount }}
+  schedule: {{ required "schedule.cron is required" .Values.schedule.cron | quote }}
+  snapshotTemplate:
+    snapshotClassName: {{ required "schedule.snapshotClassName is required" .Values.schedule.snapshotClassName }}
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  hard:
+    count/volumesnapshots.snapshot.storage.k8s.io: "6"

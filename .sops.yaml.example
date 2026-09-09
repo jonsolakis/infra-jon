@@ -1,0 +1,5 @@
+# Copy this file to .sops.yaml and replace the recipient before encrypting files.
+creation_rules:
+  - path_regex: helmfile/secrets/.*\.sops\.yaml$
+    age: age1replace_with_your_public_recipient
+    encrypted_regex: (?i)^(data|stringData|.*token.*|.*password.*|.*secret.*|.*api.?key.*)$

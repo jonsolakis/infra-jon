@@ -1,0 +1,6 @@
+apiVersion: v2
+name: smoke-test
+description: End-to-end ingress and TLS smoke test
+type: application
+version: 0.1.0
+appVersion: "1.11.0"

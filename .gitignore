@@ -1,0 +1,19 @@
+.DS_Store
+.env
+
+# OpenTofu
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+tofu/terraform.tfvars
+
+# Kubernetes credentials and decrypted secrets
+kubeconfig*
+*.dec.yaml
+helmfile/secrets/*.plain.yaml

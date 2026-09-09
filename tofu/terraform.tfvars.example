@@ -1,0 +1,11 @@
+# Copy to terraform.tfvars and adjust if desired. The defaults are deliberately
+# sized for a small, non-HA hobby cluster.
+project_name              = "jon-hobby"
+cluster_name              = "jon-hobby"
+container_registry_name   = "jonsolakis"
+region                    = "tor1"
+kubernetes_version_prefix = "1.36."
+node_size                 = "s-1vcpu-2gb"
+node_count                = 2
+cluster_subnet            = "172.20.0.0/16"
+service_subnet            = "172.21.0.0/19"

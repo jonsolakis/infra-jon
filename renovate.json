@@ -1,0 +1,20 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "dependencyDashboard": true,
+  "packageRules": [
+    {
+      "description": "Group cluster platform Helm chart updates",
+      "matchManagers": ["helmfile"],
+      "groupName": "cluster platform charts"
+    },
+    {
+      "description": "Require manual review for Kubernetes minor upgrades",
+      "matchPackageNames": ["kubectl"],
+      "matchUpdateTypes": ["minor", "major"],
+      "automerge": false
+    }
+  ]
+}

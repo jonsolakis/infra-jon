@@ -1,0 +1,5 @@
+schedule:
+  claimSelector: {}
+  snapshotClassName: ""
+  cron: ""
+  maxCount: 4
