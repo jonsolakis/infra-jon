@@ -7,7 +7,8 @@ Infrastructure for a cost-conscious DigitalOcean Kubernetes hobby cluster.
 - OpenTofu owns DigitalOcean resources: the project, VPC, DOKS cluster, node pool,
   and container registry.
 - Helmfile owns in-cluster platform releases.
-- Application manifests can be added to Helmfile later; no GitOps controller runs in the cluster.
+- Flux owns application releases declared under `apps/` and reconciles the hobby
+  cluster from `clusters/hobby` on the `main` branch.
 
 The default footprint is two `s-1vcpu-2gb` workers in Toronto with a non-HA
 control plane. Traefik creates one $12/month DigitalOcean regional HTTP load
@@ -22,7 +23,7 @@ use paths such as `registry.digitalocean.com/jonsolakis/my-app:<tag>`.
 ## Prerequisites
 
 Install the versions in `.tool-versions` with mise/asdf, or install OpenTofu,
-Helm, Helmfile, kubectl, doctl, SOPS, age, and just yourself.
+Helm, Helmfile, Flux, kubectl, doctl, SOPS, age, and just yourself.
 
 `helmfile diff` also requires the helm-diff plugin. Enabling encrypted
 ExternalDNS values requires the helm-secrets plugin; it is intentionally not
@@ -93,21 +94,64 @@ The optional smoke-test release serves `test.jonsolakis.dev` through Traefik
 and requests a production certificate. It is disabled after validating the
 complete DNS, ingress, and TLS path.
 
+## Bootstrap Flux
+
+Flux is bootstrapped against the public `jonsolakis/infra-jon` repository and
+reconciles `clusters/hobby` from `main`. The GitHub bootstrap uses a read-only
+deploy key; the GitHub token used to create that key is not stored in the
+cluster. Bootstrap is idempotent and can be rerun to repair or upgrade Flux:
+
+```sh
+export GITHUB_TOKEN='...'
+flux bootstrap github \
+  --owner=jonsolakis \
+  --repository=infra-jon \
+  --branch=main \
+  --path=clusters/hobby \
+  --personal \
+  --token-auth=false
+```
+
+The cluster-level Flux Kustomization waits for the Fantasy Hockey HelmRelease
+to become healthy. Flux install and upgrade remediation retries failures and
+rolls failed application upgrades back to the last working release.
+
 ## Fantasy Hockey Stats
 
-Helmfile deploys the Fantasy Hockey Stats chart from its public Git repository,
-pinned to commit `48a3d2e` (chart version `0.1.6`). The application runs in the
-`fantasy-hockey` namespace and is available at
-`https://fantasy.jonsolakis.dev`.
+Flux deploys the Fantasy Hockey Stats Helm release from its public Git
+repository. The chart source is pinned to commit `48a3d2e` (chart version
+`0.1.6`), while the API and web image tags are explicitly pinned in the
+HelmRelease. The application runs in the `fantasy-hockey` namespace and is
+available at `https://fantasy.jonsolakis.dev`.
 
 The API is fixed at one replica because it uses SQLite. Its data lives on a
 1 GiB ReadWriteOnce volume using the `do-block-storage-retain` storage class.
 Both the PVC and underlying DigitalOcean volume are retained if the Helm release
 is removed; delete them manually only when the data is no longer needed.
 
-The deployment refreshes seasons `20242025` and `20252026`. If the NHL API is
-unavailable, the import hook fails the Helm deployment while leaving existing
-SQLite data intact.
+The deployment refreshes seasons `20242025` and `20252026` in sequential init
+containers. If the NHL API is unavailable, the new API pod does not become ready
+and Flux rolls the failed upgrade back while leaving existing SQLite data intact.
+
+DigitalOcean's DOKS registry integration distributes a dockerconfigjson Secret
+named `jonsolakis` into the namespace. The HelmRelease references that existing
+Secret; registry credentials are never stored in Git.
+
+### Application updates
+
+The application repository builds and pushes immutable commit-tagged images.
+Image automation is intentionally disabled. To deploy a new application build:
+
+1. Update the API and/or web image tag in
+   `apps/fantasy-hockey/release.yaml`.
+2. If the chart changed, update the full commit in
+   `apps/fantasy-hockey/source.yaml`.
+3. Render and review the manifests, then commit and push to `main`.
+4. Flux detects the commit and reconciles it. Run `just flux-status` to inspect
+   health or `just flux-reconcile` to request immediate reconciliation.
+
+Do not add this release back to Helmfile. Helmfile and Flux must not manage the
+same Helm release.
 
 SnapScheduler takes a CSI volume snapshot every Saturday at 08:17 UTC and keeps
 the newest four. The namespace quota allows six snapshots so retention cleanup
@@ -148,7 +192,11 @@ just fmt
 just validate
 just helm-template
 just helm-diff
+just gitops-template
+just flux-status
 ```
 
-CI only validates and renders. It never applies infrastructure or touches the
-cluster. Deployment remains an explicit local operation.
+CI validates OpenTofu, Helmfile, and the Flux Kustomize trees. It never applies
+infrastructure or touches the cluster. OpenTofu and platform changes remain
+explicit local operations; application changes deploy through Flux after a push
+to `main`.

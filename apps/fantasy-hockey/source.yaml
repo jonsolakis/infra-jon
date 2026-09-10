@@ -1,0 +1,10 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: fantasy-hockey-stats-chart
+  namespace: fantasy-hockey
+spec:
+  interval: 10m
+  url: https://github.com/jonsolakis/fantasy-hockey-stats.git
+  ref:
+    commit: 48a3d2e3e4a8dd17a7b683644c3c621ee06fa5f2

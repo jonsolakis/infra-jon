@@ -57,24 +57,12 @@ releases:
     version: 3.5.0
     condition: fantasyHockeyStats.snapshots.enabled
 
-  - name: fantasy-hockey-stats
-    namespace: fantasy-hockey
-    chart: git::https://github.com/jonsolakis/fantasy-hockey-stats.git@charts/fantasy-hockey-stats?ref=48a3d2e
-    forceGoGetter: true
-    condition: fantasyHockeyStats.enabled
-    needs:
-      - traefik-system/traefik
-      - platform-system/platform-config
-    values:
-      - values/fantasy-hockey-stats.yaml
-
   - name: fantasy-hockey-stats-snapshots
     namespace: fantasy-hockey
     chart: charts/snapshot-schedule
     condition: fantasyHockeyStats.snapshots.enabled
     needs:
       - snapscheduler/snapscheduler
-      - fantasy-hockey/fantasy-hockey-stats
     values:
       - schedule:
           claimSelector:

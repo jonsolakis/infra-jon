@@ -34,3 +34,7 @@ jobs:
       - name: Render Helm releases
         working-directory: helmfile
         run: helmfile --environment hobby template
+      - name: Render Flux application manifests
+        run: kubectl kustomize apps/fantasy-hockey >/dev/null
+      - name: Render hobby cluster manifests
+        run: kubectl kustomize clusters/hobby >/dev/null
