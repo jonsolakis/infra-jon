@@ -60,9 +60,11 @@ flux-status:
   flux get all --all-namespaces
 
 flux-reconcile:
+  flux reconcile kustomization fantasy-hockey-database --with-source
   flux reconcile kustomization fantasy-hockey --with-source
 
 gitops-template:
+  kubectl kustomize apps/fantasy-hockey/database >/dev/null
   kubectl kustomize apps/fantasy-hockey >/dev/null
   kubectl kustomize clusters/hobby >/dev/null
 

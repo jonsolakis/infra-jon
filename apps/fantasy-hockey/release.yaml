@@ -36,26 +36,24 @@ spec:
     api:
       image:
         repository: registry.digitalocean.com/jonsolakis/fantasy-hockey-stats
-        tag: api-40bab2e
+        tag: api-42b144c
       replicaCount: 1
 
     web:
       image:
         repository: registry.digitalocean.com/jonsolakis/fantasy-hockey-stats
-        tag: web-e372204
+        tag: web-42b144c
 
-    persistence:
-      enabled: true
-      storageClass: do-block-storage-retain
-      accessModes:
-        - ReadWriteOnce
-      size: 1Gi
+    database:
+      existingSecret: fantasy-hockey-database
+      secretKey: DATABASE_URL
 
     imagePullSecrets:
       - name: jonsolakis
 
     seasonImport:
       enabled: true
+      schedule: "17 */6 * * *"
       seasonIds:
         - "20242025"
         - "20252026"

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: fantasy-hockey-postgres
+  namespace: fantasy-hockey
+  labels:
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/instance: fantasy-hockey-postgres
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/instance: fantasy-hockey-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres

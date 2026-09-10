@@ -16,4 +16,5 @@ tofu/terraform.tfvars
 # Kubernetes credentials and decrypted secrets
 kubeconfig*
 *.dec.yaml
+.sops-age-key.txt
 helmfile/secrets/*.plain.yaml

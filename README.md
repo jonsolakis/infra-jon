@@ -13,8 +13,9 @@ Infrastructure for a cost-conscious DigitalOcean Kubernetes hobby cluster.
 The default footprint is two `s-1vcpu-2gb` workers in Toronto with a non-HA
 control plane. Traefik creates one $12/month DigitalOcean regional HTTP load
 balancer shared by every HTTP application. cert-manager is installed with
-monitoring disabled. No database, persistent volume, logging stack, or metrics
-stack is created by default.
+monitoring disabled. Fantasy Hockey adds one 1 GiB block-storage volume for its
+in-cluster PostgreSQL database. No managed database, logging stack, or metrics
+stack is created.
 
 The DigitalOcean Container Registry uses the free Starter tier: one image
 repository and 500 MiB of storage. The registry name is `jonsolakis`, so images
@@ -113,26 +114,40 @@ flux bootstrap github \
   --token-auth=false
 ```
 
-The cluster-level Flux Kustomization waits for the Fantasy Hockey HelmRelease
-to become healthy. Flux install and upgrade remediation retries failures and
-rolls failed application upgrades back to the last working release.
+Flux first reconciles the Fantasy Hockey PostgreSQL StatefulSet and waits for it
+to become healthy. The application Kustomization depends on that database and
+then waits for the HelmRelease. Flux install and upgrade remediation retries
+failures and rolls failed application upgrades back to the last working release.
+
+The database credentials and application DATABASE_URL are committed only as a
+SOPS-encrypted Secret. The age private key is stored in the flux-system
+namespace as the sops-age Secret:
+
+```sh
+kubectl -n flux-system create secret generic sops-age \
+  --from-file=age.agekey=.sops-age-key.txt
+```
+
+The local `.sops-age-key.txt` backup is gitignored; copy it to your password
+manager because a replacement cluster cannot decrypt the Secret without it.
 
 ## Fantasy Hockey Stats
 
 Flux deploys the Fantasy Hockey Stats Helm release from its public Git
-repository. The chart source is pinned to commit `48a3d2e` (chart version
-`0.1.6`), while the API and web image tags are explicitly pinned in the
+repository. The chart source is pinned to commit `42b144c` (chart version
+`0.1.8`), while the API and web image tags are explicitly pinned in the
 HelmRelease. The application runs in the `fantasy-hockey` namespace and is
 available at `https://fantasy.jonsolakis.dev`.
 
-The API is fixed at one replica because it uses SQLite. Its data lives on a
-1 GiB ReadWriteOnce volume using the `do-block-storage-retain` storage class.
-Both the PVC and underlying DigitalOcean volume are retained if the Helm release
-is removed; delete them manually only when the data is no longer needed.
+PostgreSQL runs as one in-cluster StatefulSet with conservative CPU and memory
+requests. Its data lives on a 1 GiB ReadWriteOnce volume using the
+`do-block-storage-retain` storage class. The PVC is retained if the StatefulSet
+is removed or scaled down, and the underlying DigitalOcean volume is retained
+if the PVC is deleted.
 
-The deployment refreshes seasons `20242025` and `20252026` in sequential init
-containers. If the NHL API is unavailable, the new API pod does not become ready
-and Flux rolls the failed upgrade back while leaving existing SQLite data intact.
+The season-import CronJob refreshes seasons `20242025` and `20252026` every
+six hours. Imports are independent of API startup, so an NHL API outage fails
+that Job without taking the application offline.
 
 DigitalOcean's DOKS registry integration distributes a dockerconfigjson Secret
 named `jonsolakis` into the namespace. The HelmRelease references that existing
@@ -154,10 +169,10 @@ Image automation is intentionally disabled. To deploy a new application build:
 Do not add this release back to Helmfile. Helmfile and Flux must not manage the
 same Helm release.
 
-SnapScheduler takes a CSI volume snapshot every Saturday at 08:17 UTC and keeps
-the newest four. The namespace quota allows six snapshots so retention cleanup
-has headroom. These snapshots are storage-level, crash-consistent backups;
-periodically test a restore before relying on them.
+SnapScheduler takes a CSI snapshot of the PostgreSQL volume every Saturday at
+08:17 UTC and keeps the newest four. The namespace quota allows six snapshots so
+retention cleanup has headroom. These snapshots are storage-level,
+crash-consistent backups; periodically test a restore before relying on them.
 
 Traefik accepts ordinary Kubernetes Ingress resources and redirects HTTP to
 HTTPS. Its dashboard is disabled. All apps should use ClusterIP Services behind

@@ -66,8 +66,8 @@ releases:
     values:
       - schedule:
           claimSelector:
-            app.kubernetes.io/name: fantasy-hockey-stats
-            app.kubernetes.io/instance: fantasy-hockey-stats
+            app.kubernetes.io/name: postgresql
+            app.kubernetes.io/instance: fantasy-hockey-postgres
           snapshotClassName: do-block-storage
           cron: "17 8 * * 6"
           maxCount: 4

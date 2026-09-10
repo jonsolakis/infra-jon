@@ -7,4 +7,4 @@ spec:
   interval: 10m
   url: https://github.com/jonsolakis/fantasy-hockey-stats.git
   ref:
-    commit: 48a3d2e3e4a8dd17a7b683644c3c621ee06fa5f2
+    commit: 42b144c7a1004bfc4c1c1b048f79a380f9663bcb
