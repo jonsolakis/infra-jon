@@ -23,7 +23,8 @@ use paths such as `registry.digitalocean.com/jonsolakis/my-app:<tag>`.
 ## Prerequisites
 
 Install the versions in `.tool-versions` with mise/asdf, or install OpenTofu,
-Helm, Helmfile, Flux, kubectl, doctl, SOPS, age, and just yourself.
+Helm, Helmfile, kubectl, doctl, SOPS, age, and just yourself. Install the Flux
+CLI with `brew install fluxcd/tap/flux`.
 
 `helmfile diff` also requires the helm-diff plugin. Enabling encrypted
 ExternalDNS values requires the helm-secrets plugin; it is intentionally not
