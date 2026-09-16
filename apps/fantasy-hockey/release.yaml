@@ -35,7 +35,7 @@ spec:
     api:
       image:
         repository: registry.digitalocean.com/jonsolakis/fantasy-hockey-stats
-        tag: api-5-0b18e2e # {"$imagepolicy": "flux-system:fantasy-hockey-api:tag"}
+        tag: api-6-940d82b # {"$imagepolicy": "flux-system:fantasy-hockey-api:tag"}
       replicaCount: 1
     web:
       image:
