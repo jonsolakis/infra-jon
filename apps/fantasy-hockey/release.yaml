@@ -36,13 +36,13 @@ spec:
     api:
       image:
         repository: registry.digitalocean.com/jonsolakis/fantasy-hockey-stats
-        tag: api-42b144c
+        tag: api-42b144c # {"$imagepolicy": "flux-system:fantasy-hockey-api:tag"}
       replicaCount: 1
 
     web:
       image:
         repository: registry.digitalocean.com/jonsolakis/fantasy-hockey-stats
-        tag: web-42b144c
+        tag: web-42b144c # {"$imagepolicy": "flux-system:fantasy-hockey-web:tag"}
 
     database:
       existingSecret: fantasy-hockey-database

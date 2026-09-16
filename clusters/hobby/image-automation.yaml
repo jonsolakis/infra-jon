@@ -1,0 +1,65 @@
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: fantasy-hockey-stats
+  namespace: flux-system
+spec:
+  image: registry.digitalocean.com/jonsolakis/fantasy-hockey-stats
+  interval: 1m
+  provider: generic
+  secretRef:
+    name: jonsolakis
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: fantasy-hockey-api
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: fantasy-hockey-stats
+  filterTags:
+    pattern: '^api-(?P<build>[0-9]+)-[a-f0-9]{7}$'
+    extract: '$build'
+  policy:
+    numerical:
+      order: asc
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: fantasy-hockey-web
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: fantasy-hockey-stats
+  filterTags:
+    pattern: '^web-(?P<build>[0-9]+)-[a-f0-9]{7}$'
+    extract: '$build'
+  policy:
+    numerical:
+      order: asc
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageUpdateAutomation
+metadata:
+  name: hobby-apps
+  namespace: flux-system
+spec:
+  interval: 1m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        name: flux-image-automation
+        email: flux-image-automation@users.noreply.github.com
+    push:
+      branch: main
+  update:
+    path: ./apps
+    strategy: Setters

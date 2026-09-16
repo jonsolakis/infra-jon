@@ -99,9 +99,10 @@ complete DNS, ingress, and TLS path.
 ## Bootstrap Flux
 
 Flux is bootstrapped against the public `jonsolakis/infra-jon` repository and
-reconciles `clusters/hobby` from `main`. The GitHub bootstrap uses a read-only
-deploy key; the GitHub token used to create that key is not stored in the
-cluster. Bootstrap is idempotent and can be rerun to repair or upgrade Flux:
+reconciles `clusters/hobby` from `main`. Image automation uses a repository-
+scoped read/write deploy key so Flux can commit selected image tags; the GitHub
+token used to create that key is not stored in the cluster. Bootstrap is
+idempotent and can be rerun to repair or upgrade Flux:
 
 ```sh
 export GITHUB_TOKEN='...'
@@ -111,6 +112,8 @@ flux bootstrap github \
   --branch=main \
   --path=clusters/hobby \
   --personal \
+  --components-extra=image-reflector-controller,image-automation-controller \
+  --read-write-key \
   --token-auth=false
 ```
 
@@ -155,16 +158,31 @@ Secret; registry credentials are never stored in Git.
 
 ### Application updates
 
-The application repository builds and pushes immutable commit-tagged images.
-Image automation is intentionally disabled. To deploy a new application build:
+Fantasy Hockey image automation expects sortable immutable tags in the form
+`api-<run-number>-<short-sha>` and `web-<run-number>-<short-sha>`. Flux scans
+the DigitalOcean registry every minute, selects the highest run number for each
+component, updates the marked tag fields in the HelmRelease, and commits the
+change directly to `main`. After the application CI adopts this tag format,
+the normal path from a successful application build to rollout is automatic.
+The existing SHA-only tags do not match the policies, so the currently pinned
+images remain unchanged until the first sortable build is published.
 
-1. Update the API and/or web image tag in
-   `apps/fantasy-hockey/release.yaml`.
-2. If the chart changed, update the full commit in
-   `apps/fantasy-hockey/source.yaml`.
-3. Render and review the manifests, then commit and push to `main`.
-4. Flux detects the commit and reconciles it. Run `just flux-status` to inspect
-   health or `just flux-reconcile` to request immediate reconciliation.
+Chart revisions remain manually pinned. When the chart changes, update the full
+commit in `apps/fantasy-hockey/source.yaml`, validate it, and commit it
+normally. Run `just flux-status` to inspect health, `just flux-reconcile` to
+reconcile the workloads, or `just flux-reconcile-images` to scan and apply
+image updates immediately.
+
+To onboard another application:
+
+1. Have its CI publish immutable tags containing a monotonically increasing
+   build number and commit SHA.
+2. Add an ImageRepository and one ImagePolicy per independently deployed image
+   to `clusters/hobby/image-automation.yaml`.
+3. Add the matching `$imagepolicy` marker to each image tag in the
+   application's manifest or HelmRelease under `apps/`.
+4. Keep release rollback/remediation and health checks enabled so a bad image
+   does not silently replace the last healthy release.
 
 Do not add this release back to Helmfile. Helmfile and Flux must not manage the
 same Helm release.
