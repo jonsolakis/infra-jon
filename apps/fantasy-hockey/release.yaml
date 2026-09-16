@@ -32,32 +32,26 @@ spec:
     mode: enabled
   values:
     fullnameOverride: fantasy-hockey-stats
-
     api:
       image:
         repository: registry.digitalocean.com/jonsolakis/fantasy-hockey-stats
         tag: api-42b144c # {"$imagepolicy": "flux-system:fantasy-hockey-api:tag"}
       replicaCount: 1
-
     web:
       image:
         repository: registry.digitalocean.com/jonsolakis/fantasy-hockey-stats
-        tag: web-42b144c # {"$imagepolicy": "flux-system:fantasy-hockey-web:tag"}
-
+        tag: web-3-601857f # {"$imagepolicy": "flux-system:fantasy-hockey-web:tag"}
     database:
       existingSecret: fantasy-hockey-database
       secretKey: DATABASE_URL
-
     imagePullSecrets:
       - name: jonsolakis
-
     seasonImport:
       enabled: true
       schedule: "17 */6 * * *"
       seasonIds:
         - "20242025"
         - "20252026"
-
     ingress:
       enabled: true
       className: traefik
