@@ -40,7 +40,7 @@ spec:
     web:
       image:
         repository: registry.digitalocean.com/jonsolakis/fantasy-hockey-stats
-        tag: web-6-940d82b # {"$imagepolicy": "flux-system:fantasy-hockey-web:tag"}
+        tag: web-7-cc59fb3 # {"$imagepolicy": "flux-system:fantasy-hockey-web:tag"}
     database:
       existingSecret: fantasy-hockey-database
       secretKey: DATABASE_URL
